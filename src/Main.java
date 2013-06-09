@@ -4,6 +4,15 @@
  */
 public class Main
 {
+    /**
+     * degugowanie :P
+     */
+   public static boolean DEBUG = Boolean.FALSE;
+   
+   /**
+    * głowny main, mejn :D
+    * @param args 
+    */
    public static void main(String[] args)
    {
        try
