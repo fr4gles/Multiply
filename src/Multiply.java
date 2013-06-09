@@ -1,8 +1,140 @@
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
+
 /**
  * główna klasa zarządzająco - obliczająca zadanie
  * @author Michal
  */
 public class Multiply
 {
+    public Float[] Results;
+    public Float[][] Matrix;
+    public Float[] Vector;
     
+    private String _connecion = "";
+    private int _size = 0;
+    
+    Multiply(String con, int size)
+    {
+        _connecion = con;
+        _size = size+1;
+        
+        Matrix = new Float[_size][_size];
+        Vector = new Float[_size];
+        Results = new Float[_size+1];
+        
+        try
+        {
+            PrepareVector();
+        }
+        catch (SQLException ex)
+        {
+            System.err.println("Błąd przy łączeniu z bazą [faza Główna]: "+ex.getMessage());
+        }
+    }
+    
+    private void PrepareVector() throws SQLException
+    {
+        try (Connection con = DriverManager.getConnection(_connecion); Statement st = con.createStatement())
+        {                
+            try
+            {
+                ResultSet rs = st.executeQuery("SELECT * FROM Xtable");
+                
+                while (rs.next()) 
+                {
+                    int index = rs.getInt(1);
+                    float x = rs.getFloat(2);
+
+                    Vector[index] = x;
+                }
+            }
+            catch(SQLException | NumberFormatException e)
+            {
+                System.out.println("Coś poszło nie tak przy zapytaniach do bazy [Vector-Xtable]: "+ e.getMessage());
+            }
+            catch(Exception e)
+            {
+                System.out.println("Błąd ... : "+e.getMessage());
+            }
+        }
+        
+    }
+    
+    public Float GetResult()
+    {
+        for(int i=0; i <= _size; ++i)
+        {
+            Results[i] = MultiplyMatrixLineWithVectoxArgument(i);
+        }
+
+        return max(Results);
+    }
+    
+    private Float MultiplyMatrixLineWithVectoxArgument(int lineIndex)
+    {
+        Float result = -Float.MIN_VALUE;
+        try (Connection con = DriverManager.getConnection(_connecion); Statement st = con.createStatement())
+        {                
+            ResultSet rs = st.executeQuery(String.format("SELECT * FROM Atable where i = %s",lineIndex));
+
+            while (rs.next()) 
+            {
+                int index = rs.getInt(1);
+                int j = rs.getInt(2);
+                float x = rs.getFloat(3);
+
+//                if(lineIndex == 10)
+//                    result = result;
+                result += x*Vector[j];
+
+                System.out.println(index + " " + j + " " + x);
+            }
+        }
+        catch (SQLException | NumberFormatException ex)
+        {
+            System.out.println("Coś poszło nie tak przy zapytaniach do bazy [Vector-Xtable]: "+ ex.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+   * <p>Returns the maximum value in an array.</p>
+   * 
+   * @param array  an array, must not be null or empty
+   * @return the minimum value in the array
+   * @throws IllegalArgumentException if <code>array</code> is <code>null</code>
+   * @throws IllegalArgumentException if <code>array</code> is empty
+   * @see IEEE754rUtils#max(float[]) IEEE754rUtils for a version of this method that handles NaN differently
+   */
+  public static float max(Float[] array) {
+      // Validates input
+      if (array == null) {
+          throw new IllegalArgumentException("The Array must not be null");
+      } else if (array.length == 0) {
+          throw new IllegalArgumentException("Array cannot be empty.");
+      }
+
+      // Finds and returns max
+      float max = array[0];
+      for (int j = 1; j < array.length; j++) {
+          if (Float.isNaN(array[j])) {
+              return Float.NaN;
+          }
+          if (array[j] > max) {
+              max = array[j];
+          }
+      }
+
+      return max;
+  }
 }
